@@ -1,84 +1,74 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
-#define MAX_THREADS 500  // başlangıç test ölçeği
-#define MAX_CORES 8      // gerçekçi ama yönetilebilir core sayısı
+#include "core.h"
+#include "thread.h"
+#include "scheduler.h"
+#include "data_generator.h"
+#include "analysis.h"
 
-typedef struct {
-    int id;
-    int load;       // ms cinsinden toplam yük (burst time toplamı)
-    int taskCount;  // kaç thread atandı (istatistik için)
-} Core;
-
-typedef struct {
-    int id;
-    int burst;  // thread’in işlem süresi (ms)
-} Thread;
+#define K 8
+#define N 500
 
 int main(int argc, char *argv[]) {
-    int k = MAX_CORES;
-    int n = MAX_THREADS;
 
-    // Algoritma seçimini al
-    int algoChoice;
-    if (argc > 1) {
-        algoChoice = atoi(argv[1]);
-    } else {
-        printf("Algoritma Seç (1=RR,2=LeastLoaded,3=Priority,4=Affinity,5=WorkStealing): ");
-        scanf("%d", &algoChoice);
+    int algo;
+    if (argc > 1) algo = atoi(argv[1]);
+    else {
+        printf("Algoritma Seç (1=RR,2=LL,3=Priority,4=Affinity,5=Steal): ");
+        scanf("%d", &algo);
     }
 
-    // Core dizisini başlat
-    Core cores[MAX_CORES];
-    for (int i = 0; i < k; i++) {
-        cores[i].id = i;
-        cores[i].load = 0;
-        cores[i].taskCount = 0;
-    }
+    Core cores[K];
+    Thread threads[N];
+    int rrIndex = 0;        // RR için güncel core pointer’ı
+    int lastCore[N];        // affinity için
 
-    // Thread dizisini random burst süreleriyle oluştur
-    Thread threads[MAX_THREADS];
-    srand(time(NULL));
-    for (int i = 0; i < n; i++) {
-        threads[i].id = i;
-        threads[i].burst = (rand() % 20) + 1; // 1–20 ms burst -> gerçekçi RT yükü
-    }
+    // init
+    initCores(cores, K);
+    generateThreads(threads, N);
 
-    // Simülasyon: Thread’leri seçilen algoritmaya göre core’lara ata
-    int rrIndex = 0;  // Round-Robin için sıradaki core
-    for (int i = 0; i < n; i++) {
-        int targetCore = 0;
+    // simülasyon
+    for (int i = 0; i < N; i++) {
+        int target = 0;
 
-        switch (algoChoice) {
-            case 1: // Round-Robin (henüz basit ata)
-                targetCore = rrIndex;
-                rrIndex = (rrIndex + 1) % k;
-                break;
-            case 2: // Least-Loaded (şimdilik en az loaded core’u seç)
-            case 3: // Priority (iskelet için least-loaded gibi seç, sonra değiştirirsiniz)
-            case 4: // Affinity (iskelet için 0 ata, sonra değiştirirsiniz)
-            case 5: // Work-Stealing (önce least-loaded atama yap, steal’i sonra ekleyeceğiz)
-            default:
-                // Şimdilik core seçiminde en az yüklü core’u bul
-                for (int j = 1; j < k; j++) {
-                    if (cores[j].load < cores[targetCore].load)
-                        targetCore = j;
-                }
-                targetCore = targetCore;
-                break;
+        switch (algo) {
+            case 1:
+                target = assignRR(cores, K, threads[i], &rrIndex);
+            break;
+
+            case 2:
+                target = assignLeastLoaded(cores, K, threads[i]);
+            break;
+
+            case 3:
+                target = assignPriority(cores, K, threads[i]);
+            break;
+
+            case 4:
+                target = assignAffinity(cores, K, threads[i], lastCore);
+            break;
+
+            case 5:
+                target = assignLeastLoaded(cores, K, threads[i]);
+            break;
         }
 
-        cores[targetCore].load += threads[i].burst;
-        cores[targetCore].taskCount++;
+        cores[target].load += threads[i].burst;
+        cores[target].taskCount++;
+        lastCore[threads[i].id] = target;
     }
 
-    // Sonuç: Core yüklerini yazdır (baseline kontrol)
-    printf("\n--- Core Load Results ---\n");
-    for (int i = 0; i < k; i++) {
-        printf("Core %d → Total Load: %d ms, Tasks: %d\n",
+    if (algo == 5)
+        balanceWorkStealing(cores, K);
+
+    printf("\n--- Core Loads ---\n");
+    for (int i = 0; i < K; i++) {
+        printf("Core %d: Load = %d, Tasks = %d\n",
                cores[i].id, cores[i].load, cores[i].taskCount);
     }
+
+    printf("\nLoad Variance = %.2f\n", loadVariance(cores, K));
 
     return 0;
 }

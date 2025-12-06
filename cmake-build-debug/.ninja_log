@@ -1,0 +1,8 @@
+# ninja log v6
+1	211	1765028029750615302	CMakeFiles/core_thread_relation.dir/main.c.o	e4002b293d8fddd4
+1	50	1765028090383307987	build.ninja	dd5fafe9a8bb8308
+0	147	1765028090390818507	CMakeFiles/core_thread_relation.dir/scheduler.c.o	563ac934eb308a17
+1	148	1765028090391017551	CMakeFiles/core_thread_relation.dir/data_generator.c.o	3c985fc4a53712f0
+1	148	1765028090391137761	CMakeFiles/core_thread_relation.dir/analysis.c.o	cef7d3beb6ff7450
+1	148	1765028090391253346	CMakeFiles/core_thread_relation.dir/core.c.o	b52ab0a1289eed64
+148	251	1765028090538226667	core_thread_relation	bfdf0a779d0f592c
