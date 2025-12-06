@@ -1,0 +1,3 @@
+/Users/efe/CLionProjects/core-thread-relation/cmake-build-debug/CMakeFiles/core_thread_relation.dir
+/Users/efe/CLionProjects/core-thread-relation/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/efe/CLionProjects/core-thread-relation/cmake-build-debug/CMakeFiles/rebuild_cache.dir
