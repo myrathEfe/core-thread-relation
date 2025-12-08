@@ -54,58 +54,84 @@ void printResults(Core *cores, int k, int algo) {
     printf("============================================\n\n");
 }
 
-int main(int argc, char *argv[]) {
-    int algo;
-    if (argc > 1) algo = atoi(argv[1]);
-    else {
-        printf("Algoritma Seç (1=RR,2=LL,3=Priority,4=Affinity,5=Steal): ");
+int main() {
+
+    while (1) {
+
+        int algo;
+        printf("\nAlgoritma Seç:\n");
+        printf(" 1 = Round-Robin\n");
+        printf(" 2 = Least-Loaded\n");
+        printf(" 3 = Priority-Based\n");
+        printf(" 4 = Affinity-Based\n");
+        printf(" 5 = Work-Stealing\n");
+        printf(" 0 = Çıkış\n");
+        printf("Seçiminiz: ");
         scanf("%d", &algo);
-    }
 
-    Core cores[K];
-    Thread threads[N];
-    int rrIndex = 0;
-    int lastCore[N];
-
-    // lastCore için başlangıç
-    for (int i = 0; i < N; i++) lastCore[i] = -1;
-
-    initCores(cores, K);
-    generateThreads(threads, N);
-
-    for (int i = 0; i < N; i++) {
-        int target = 0;
-
-        switch (algo) {
-            case 1:
-                target = assignRR(cores, K, threads[i], &rrIndex);
-                break;
-            case 2:
-                target = assignLeastLoaded(cores, K, threads[i]);
-                break;
-            case 3:
-                target = assignPriority(cores, K, threads[i]);
-                break;
-            case 4:
-                target = assignAffinity(cores, K, threads[i], lastCore);
-                break;
-            case 5:
-                target = assignLeastLoaded(cores, K, threads[i]);
-                break;
-            default:
-                target = assignLeastLoaded(cores, K, threads[i]);
+        if (algo == 0) {
+            printf("Programdan çıkılıyor...\n");
+            break;
         }
 
-        cores[target].load += threads[i].burst;
-        cores[target].taskCount++;
-        lastCore[threads[i].id] = target;
-    }
+        // yapılar
+        Core cores[K];
+        Thread threads[N];
+        int rrIndex = 0;
+        int lastCore[N];
 
-    if (algo == 5) {
-        balanceWorkStealing(cores, K);
-    }
+        // lastCore başlangıcı
+        for (int i = 0; i < N; i++) lastCore[i] =  -1;
 
-    printResults(cores, K, algo);
+        // veri üretme ve core başlangıcı
+        initCores(cores, K);
+        generateThreads(threads, N);
+
+        // simülasyon
+        for (int i = 0; i < N; i++) {
+
+            int target = 0;
+
+            switch (algo) {
+                case 1:
+                    target = assignRR(cores, K, threads[i], &rrIndex);
+                    break;
+
+                case 2:
+                    target = assignLeastLoaded(cores, K, threads[i]);
+                    break;
+
+                case 3:
+                    target = assignPriority(cores, K, threads[i]);
+                    break;
+
+                case 4:
+                    target = assignAffinity(cores, K, threads[i], lastCore);
+                    break;
+
+                case 5:
+                    target = assignLeastLoaded(cores, K, threads[i]);
+                    break;
+
+                default:
+                    printf("Geçersiz seçim, Least-Loaded kullanıldı.\n");
+                    target = assignLeastLoaded(cores, K, threads[i]);
+                    break;
+            }
+
+            cores[target].load += threads[i].burst;
+            cores[target].taskCount++;
+            lastCore[threads[i].id] = target;
+        }
+
+        // Work Stealing
+        if (algo == 5) {
+            balanceWorkStealing(cores, K);
+        }
+
+        // sonuçlar
+        printResults(cores, K, algo);
+    }
 
     return 0;
 }
