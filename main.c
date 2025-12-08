@@ -10,8 +10,51 @@
 #define K 8
 #define N 500
 
-int main(int argc, char *argv[]) {
+const char* algoName(int algo) {
+    switch (algo) {
+        case 1: return "Round-Robin";
+        case 2: return "Least-Loaded";
+        case 3: return "Priority-Based";
+        case 4: return "Affinity-Based";
+        case 5: return "Least-Loaded + Work-Stealing";
+        default: return "Unknown";
+    }
+}
 
+void printResults(Core *cores, int k, int algo) {
+    int totalLoad = 0;
+    int maxLoad = cores[0].load;
+    int minLoad = cores[0].load;
+
+    for (int i = 0; i < k; i++) {
+        totalLoad += cores[i].load;
+        if (cores[i].load > maxLoad) maxLoad = cores[i].load;
+        if (cores[i].load < minLoad) minLoad = cores[i].load;
+    }
+
+    double avgLoad = (double)totalLoad / k;
+    double var = loadVariance(cores, k);
+
+    printf("\n================= SONUÇLAR =================\n");
+    printf(" Algoritma      : %s\n", algoName(algo));
+    printf(" Çekirdek sayısı: %d\n", k);
+    printf(" Thread sayısı  : %d\n", N);
+    printf("--------------------------------------------\n");
+
+    for (int i = 0; i < k; i++) {
+        printf(" Core %d -> Load: %4d  | Tasks: %3d\n",
+               cores[i].id, cores[i].load, cores[i].taskCount);
+    }
+
+    printf("--------------------------------------------\n");
+    printf(" Toplam yük         : %d\n", totalLoad);
+    printf(" Ortalama yük       : %.2f\n", avgLoad);
+    printf(" Min / Max yük      : %d / %d\n", minLoad, maxLoad);
+    printf(" Yük varyansı       : %.2f\n", var);
+    printf("============================================\n\n");
+}
+
+int main(int argc, char *argv[]) {
     int algo;
     if (argc > 1) algo = atoi(argv[1]);
     else {
@@ -21,37 +64,36 @@ int main(int argc, char *argv[]) {
 
     Core cores[K];
     Thread threads[N];
-    int rrIndex = 0;        // RR için güncel core pointer’ı
-    int lastCore[N];        // affinity için
+    int rrIndex = 0;
+    int lastCore[N];
 
-    // init
+    // lastCore için başlangıç
+    for (int i = 0; i < N; i++) lastCore[i] = -1;
+
     initCores(cores, K);
     generateThreads(threads, N);
 
-    // simülasyon
     for (int i = 0; i < N; i++) {
         int target = 0;
 
         switch (algo) {
             case 1:
                 target = assignRR(cores, K, threads[i], &rrIndex);
-            break;
-
+                break;
             case 2:
                 target = assignLeastLoaded(cores, K, threads[i]);
-            break;
-
+                break;
             case 3:
                 target = assignPriority(cores, K, threads[i]);
-            break;
-
+                break;
             case 4:
                 target = assignAffinity(cores, K, threads[i], lastCore);
-            break;
-
+                break;
             case 5:
                 target = assignLeastLoaded(cores, K, threads[i]);
-            break;
+                break;
+            default:
+                target = assignLeastLoaded(cores, K, threads[i]);
         }
 
         cores[target].load += threads[i].burst;
@@ -59,16 +101,11 @@ int main(int argc, char *argv[]) {
         lastCore[threads[i].id] = target;
     }
 
-    if (algo == 5)
+    if (algo == 5) {
         balanceWorkStealing(cores, K);
-
-    printf("\n--- Core Loads ---\n");
-    for (int i = 0; i < K; i++) {
-        printf("Core %d: Load = %d, Tasks = %d\n",
-               cores[i].id, cores[i].load, cores[i].taskCount);
     }
 
-    printf("\nLoad Variance = %.2f\n", loadVariance(cores, K));
+    printResults(cores, K, algo);
 
     return 0;
 }

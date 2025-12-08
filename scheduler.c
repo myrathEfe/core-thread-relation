@@ -15,16 +15,17 @@ int assignLeastLoaded(Core *cores, int k, Thread t) {
 }
 
 int assignPriority(Core *cores, int k, Thread t) {
-    // Şimdilik least-loaded gibi, sonra gerçek öncelik mantığını ekleyebilirsiniz.
+    // Şimdilik least-loaded gibi davransın
     return assignLeastLoaded(cores, k, t);
 }
 
 int assignAffinity(Core *cores, int k, Thread t, int *lastCore) {
-    // Aynı thread aynı core'a gitmeye çalışır
+    // Thread daha önce hiç atanmamışsa 0’a yolla
+    if (lastCore[t.id] < 0 || lastCore[t.id] >= k)
+        return 0;
     return lastCore[t.id];
 }
 
 void balanceWorkStealing(Core *cores, int k) {
-    // Work stealing iskeleti; sonra dolduracaksınız
-    // örnek: en yüksek yükten en düşük yüke burst aktarma mantığı
+    // Şimdilik hiçbir şey yapmasın; sonra doldurursun
 }
