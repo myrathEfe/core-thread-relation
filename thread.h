@@ -4,7 +4,10 @@
 typedef struct {
     int id;
     int burst;
-    int priority; // priority scheduler için opsiyonel
+    int priority;
+    int group;   // <-- EKLE (process/thread grubu)
 } Thread;
 
+
 #endif
+
